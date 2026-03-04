@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "functions": {
+    "api/**/*.ts": {
+      "runtime": "@vercel/node@5"
+    }
+  },
+  "routes": [
+    { "src": "/health", "dest": "/api/health.ts" },
+    { "src": "/mcp/tools", "dest": "/api/mcp/tools.ts" },
+    { "src": "/a2a/rpc", "dest": "/api/a2a/rpc.ts" },
+    { "src": "/a2a/agent-card", "dest": "/api/a2a/agent-card.ts" }
+  ]
+}

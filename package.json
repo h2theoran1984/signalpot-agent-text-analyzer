@@ -1,0 +1,19 @@
+{
+  "name": "signalpot-agent-text-analyzer",
+  "version": "0.1.0",
+  "description": "SignalPot showcase agent: text summary + sentiment analysis powered by Claude Haiku",
+  "private": true,
+  "scripts": {
+    "dev": "node -e \"const {createServer} = require('http'); require('@vercel/node')\"",
+    "register": "npx tsx scripts/register.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "signalpot": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
