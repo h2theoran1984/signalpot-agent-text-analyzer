@@ -35,7 +35,13 @@ Respond with only valid JSON, no markdown.`;
   const content = message.content[0];
   if (content.type !== "text") throw new Error("Unexpected response type from Claude");
 
-  const parsed = JSON.parse(content.text);
+  // Strip accidental markdown fences from Claude's response
+  let text = content.text.trim();
+  if (text.startsWith("```")) {
+    text = text.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
+  }
+
+  const parsed = JSON.parse(text);
   return {
     summary: parsed.summary,
     key_points: parsed.key_points,
