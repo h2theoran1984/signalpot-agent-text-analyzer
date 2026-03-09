@@ -1,41 +1,110 @@
 import { anthropic } from "./anthropic.js";
 
-export interface SummarizeInput {
+export interface MeetingSummaryInput {
   text: string;
-  format?: "paragraph" | "bullets";
-  max_length?: number;
+  context?: string;
 }
 
-export interface SummarizeOutput {
+export interface ActionItem {
+  task: string;
+  owner: string;
+  due: string;
+  notes: string;
+  next_step: string;
+}
+
+export interface MeetingSummaryOutput {
   summary: string;
-  key_points: string[];
-  word_count_original: number;
-  word_count_summary: number;
+  action_items: ActionItem[];
+  decisions: string[];
+  participants: string[];
+  meeting_tone: string;
 }
 
-export async function summarize(input: SummarizeInput): Promise<SummarizeOutput> {
-  const format = input.format ?? "paragraph";
-  const maxLength = input.max_length ?? 300;
+const MEETING_SYSTEM_PROMPT = `You are The Next Step — an elite meeting analyst. Your job is to extract maximum clarity from meeting transcripts. You are ruthlessly concise and structured.
 
-  const prompt = `Summarize the following text. Return a JSON object with these fields:
-- "summary": a ${format === "bullets" ? "bullet-point" : "concise paragraph"} summary (max ${maxLength} words)
-- "key_points": array of 3-5 key takeaways as short strings
+RULES:
+- Summary must be exactly 2-3 sentences. No more.
+- Every action item MUST have: task, owner, due, notes, next_step
+- If no due date is mentioned, infer one or write "TBD"
+- If no owner is clear, write "Unassigned"
+- The "next_step" field describes the immediate next action the owner should take
+- Decisions are firm commitments made during the meeting, not suggestions
+- Participants are people mentioned by name
+- meeting_tone must be one of: productive, tense, collaborative, unfocused, urgent
 
-Text to summarize:
-${input.text}
+OUTPUT FORMAT — respond with ONLY valid JSON, no markdown, no code blocks, no explanation:
+{
+  "summary": "2-3 sentence overview",
+  "action_items": [
+    {
+      "task": "what needs to be done",
+      "owner": "who is doing it",
+      "due": "when it is due",
+      "notes": "relevant context or blockers",
+      "next_step": "the immediate next action (owner)"
+    }
+  ],
+  "decisions": ["decision 1", "decision 2"],
+  "participants": ["Name1", "Name2"],
+  "meeting_tone": "productive"
+}`;
 
-Respond with only valid JSON, no markdown.`;
+export async function summarizeMeeting(input: MeetingSummaryInput): Promise<MeetingSummaryOutput> {
+  const contextLine = input.context ? `\nMeeting context: ${input.context}\n` : "";
+
+  const userPrompt = `${contextLine}Meeting transcript:
+${input.text}`;
 
   const message = await anthropic.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 1024,
-    messages: [{ role: "user", content: prompt }],
+    max_tokens: 512,
+    system: MEETING_SYSTEM_PROMPT,
+    messages: [{ role: "user", content: userPrompt }],
   });
 
   const content = message.content[0];
-  if (content.type !== "text") throw new Error("Unexpected response type from Claude");
+  if (content.type !== "text") throw new Error("Unexpected response type");
 
-  // Strip accidental markdown fences from Claude's response
+  let text = content.text.trim();
+  if (text.startsWith("```")) {
+    text = text.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
+  }
+
+  return JSON.parse(text);
+}
+
+// Lightweight action-items-only extraction
+export interface ActionItemsOutput {
+  action_items: ActionItem[];
+  count: number;
+}
+
+const ACTION_ITEMS_SYSTEM_PROMPT = `You extract action items from meeting transcripts. Nothing else.
+
+Every action item MUST have: task, owner, due, notes, next_step.
+If no due date is mentioned, write "TBD". If no owner is clear, write "Unassigned".
+The "next_step" field is the immediate next action the owner should take.
+
+Respond with ONLY valid JSON, no markdown, no code blocks:
+{
+  "action_items": [
+    { "task": "...", "owner": "...", "due": "...", "notes": "...", "next_step": "..." }
+  ],
+  "count": 0
+}`;
+
+export async function extractActionItems(input: { text: string }): Promise<ActionItemsOutput> {
+  const message = await anthropic.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 512,
+    system: ACTION_ITEMS_SYSTEM_PROMPT,
+    messages: [{ role: "user", content: input.text }],
+  });
+
+  const content = message.content[0];
+  if (content.type !== "text") throw new Error("Unexpected response type");
+
   let text = content.text.trim();
   if (text.startsWith("```")) {
     text = text.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
@@ -43,9 +112,7 @@ Respond with only valid JSON, no markdown.`;
 
   const parsed = JSON.parse(text);
   return {
-    summary: parsed.summary,
-    key_points: parsed.key_points,
-    word_count_original: input.text.split(/\s+/).length,
-    word_count_summary: parsed.summary.split(/\s+/).length,
+    action_items: parsed.action_items,
+    count: parsed.action_items.length,
   };
 }

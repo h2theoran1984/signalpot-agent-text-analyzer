@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import type { JSONRPCRequest, JSONRPCResponse, MessageSendParams } from "../../lib/a2a-types.js";
-import { summarize } from "../../lib/summarize.js";
+import { summarizeMeeting, extractActionItems } from "../../lib/summarize.js";
 import { analyzeSentiment } from "../../lib/sentiment.js";
 
 function jsonrpcError(id: string | number, code: number, message: string): JSONRPCResponse {
@@ -8,7 +8,7 @@ function jsonrpcError(id: string | number, code: number, message: string): JSONR
 }
 
 async function handleMessageSend(params: MessageSendParams): Promise<unknown> {
-  const capability = params.metadata?.capability_used ?? "signalpot/text-summary@v1";
+  const capability = params.metadata?.capability_used ?? "signalpot/meeting-summary@v1";
   const dataPart = params.message.parts.find((p) => p.type === "data") as
     | { type: "data"; data: Record<string, unknown> }
     | undefined;
@@ -16,22 +16,21 @@ async function handleMessageSend(params: MessageSendParams): Promise<unknown> {
     | { type: "text"; text: string }
     | undefined;
 
-  if (capability === "signalpot/sentiment@v1") {
-    const text =
-      (dataPart?.data?.text as string) ?? textPart?.text ?? "";
-    if (!text) throw new Error("Missing text input");
-    const result = await analyzeSentiment({ text });
-    return {
-      id: crypto.randomUUID(),
-      status: { state: "completed" },
-      artifacts: [{ parts: [{ type: "data", data: result }] }],
-    };
+  const text = (dataPart?.data?.text as string) ?? textPart?.text ?? "";
+  if (!text) throw new Error("Missing text input");
+
+  let result: unknown;
+
+  if (capability === "signalpot/action-items@v1") {
+    result = await extractActionItems({ text });
+  } else if (capability === "signalpot/sentiment@v1") {
+    result = await analyzeSentiment({ text });
+  } else {
+    // Default: meeting-summary
+    const context = (dataPart?.data?.context as string) ?? undefined;
+    result = await summarizeMeeting({ text, context });
   }
 
-  // Default: text-summary
-  const input = dataPart?.data ?? { text: textPart?.text ?? "" };
-  if (!input.text) throw new Error("Missing text input");
-  const result = await summarize(input as { text: string; format?: "paragraph" | "bullets"; max_length?: number });
   return {
     id: crypto.randomUUID(),
     status: { state: "completed" },

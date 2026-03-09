@@ -4,26 +4,35 @@ export default function handler(_req: VercelRequest, res: VercelResponse) {
   res.status(200).json({
     tools: [
       {
-        name: "summarize_text",
-        description: "Summarize a piece of text using Claude Haiku",
+        name: "meeting_summary",
+        description: "Produces a full structured meeting summary with action items, decisions, participants, and tone analysis. Each action item includes task, owner, due date, notes, and next step.",
         inputSchema: {
           type: "object",
           properties: {
-            text: { type: "string", description: "Text to summarize (50-50000 chars)" },
-            format: { type: "string", enum: ["paragraph", "bullets"], default: "paragraph" },
-            max_length: { type: "integer", default: 300 },
+            text: { type: "string", description: "Meeting transcript or notes (50-50000 chars)" },
+            context: { type: "string", description: "Optional meeting context (e.g. 'Weekly engineering standup')" },
           },
           required: ["text"],
         },
       },
       {
-        name: "analyze_sentiment",
-        description: "Analyze the sentiment and emotions in text",
+        name: "extract_action_items",
+        description: "Lightweight extraction of just the action items from a meeting transcript. Each item has task, owner, due date, notes, and next step.",
         inputSchema: {
           type: "object",
           properties: {
-            text: { type: "string", description: "Text to analyze (1-10000 chars)" },
-            language: { type: "string", default: "en" },
+            text: { type: "string", description: "Meeting transcript or notes (20-50000 chars)" },
+          },
+          required: ["text"],
+        },
+      },
+      {
+        name: "analyze_meeting_tone",
+        description: "Analyzes the emotional tone and sentiment of a meeting transcript.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            text: { type: "string", description: "Meeting transcript or notes (1-10000 chars)" },
           },
           required: ["text"],
         },

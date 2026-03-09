@@ -1,49 +1,94 @@
 {
-  "name": "Text Analyzer",
-  "slug": "text-analyzer",
-  "description": "Summarizes text and performs sentiment analysis using Claude Haiku. Implements signalpot/text-summary@v1 and signalpot/sentiment@v1 standard interfaces.",
-  "goal": "Provide fast, accurate text summarization and sentiment analysis as a reusable capability for other agents and callers on the SignalPot network.",
-  "decision_logic": "For each incoming request, route to the appropriate capability handler based on the capability_used field. For text-summary: call Claude Haiku with a structured prompt to extract a concise summary and key points. For sentiment: call Claude Haiku to classify emotion, polarity score (-1 to 1), and detected emotions. Always return well-formed JSON matching the standard interface schemas.",
+  "name": "The Next Step",
+  "slug": "the-next-step",
+  "description": "Meeting summary specialist. Extracts action items with owners, due dates, notes, and next steps from any meeting transcript. No fluff — just what needs to happen and who's doing it.",
+  "goal": "Turn messy meeting transcripts into structured action plans. Every meeting has a next step — this agent finds it.",
+  "decision_logic": "Route incoming requests to the appropriate handler: meeting-summary produces a full structured breakdown (summary, action items, decisions, participants). action-items produces only the lightweight action list for fast extraction. sentiment analyzes the meeting tone. All handlers use Claude Haiku with meeting-specialist system prompts enforcing the standard: task (owner) due date / notes / next step (owner).",
   "agent_type": "reactive",
   "auth_type": "none",
   "rate_type": "per_call",
   "rate_amount": 0.002,
-  "tags": ["text", "nlp", "summarization", "sentiment", "claude"],
+  "tags": ["meetings", "action-items", "summary", "productivity", "nlp", "claude"],
   "capability_schema": {
     "capabilities": [
       {
-        "id": "signalpot/text-summary@v1",
-        "name": "Text Summarization",
-        "description": "Summarizes a piece of text, returning a concise summary and key points",
+        "id": "signalpot/meeting-summary@v1",
+        "name": "Meeting Summary",
+        "description": "Produces a full structured meeting summary: overview, action items with owners/due dates/notes/next steps, decisions made, and participants mentioned.",
         "inputSchema": {
           "type": "object",
           "properties": {
-            "text": { "type": "string", "minLength": 50, "maxLength": 50000 },
-            "format": { "type": "string", "enum": ["paragraph", "bullets"], "default": "paragraph" },
-            "max_length": { "type": "integer", "minimum": 50, "maximum": 2000, "default": 300 }
+            "text": { "type": "string", "minLength": 50, "maxLength": 50000, "description": "Meeting transcript, notes, or minutes" },
+            "context": { "type": "string", "maxLength": 500, "description": "Optional context about the meeting (e.g. 'Weekly engineering standup')" }
           },
           "required": ["text"]
         },
         "outputSchema": {
           "type": "object",
           "properties": {
-            "summary": { "type": "string" },
-            "key_points": { "type": "array", "items": { "type": "string" } },
-            "word_count_original": { "type": "integer" },
-            "word_count_summary": { "type": "integer" }
+            "summary": { "type": "string", "description": "2-3 sentence meeting overview" },
+            "action_items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "task": { "type": "string" },
+                  "owner": { "type": "string" },
+                  "due": { "type": "string" },
+                  "notes": { "type": "string" },
+                  "next_step": { "type": "string" }
+                },
+                "required": ["task", "owner"]
+              }
+            },
+            "decisions": { "type": "array", "items": { "type": "string" } },
+            "participants": { "type": "array", "items": { "type": "string" } },
+            "meeting_tone": { "type": "string", "enum": ["productive", "tense", "collaborative", "unfocused", "urgent"] }
           },
-          "required": ["summary", "key_points"]
+          "required": ["summary", "action_items", "decisions", "participants", "meeting_tone"]
+        }
+      },
+      {
+        "id": "signalpot/action-items@v1",
+        "name": "Action Item Extraction",
+        "description": "Lightweight extraction of just the action items from a meeting transcript. Fast and cheap.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "text": { "type": "string", "minLength": 20, "maxLength": 50000, "description": "Meeting transcript, notes, or minutes" }
+          },
+          "required": ["text"]
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "action_items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "task": { "type": "string" },
+                  "owner": { "type": "string" },
+                  "due": { "type": "string" },
+                  "notes": { "type": "string" },
+                  "next_step": { "type": "string" }
+                },
+                "required": ["task", "owner"]
+              }
+            },
+            "count": { "type": "integer" }
+          },
+          "required": ["action_items", "count"]
         }
       },
       {
         "id": "signalpot/sentiment@v1",
-        "name": "Sentiment Analysis",
-        "description": "Analyzes sentiment and emotion in text",
+        "name": "Meeting Tone Analysis",
+        "description": "Analyzes the emotional tone of a meeting — productive, tense, collaborative, etc.",
         "inputSchema": {
           "type": "object",
           "properties": {
-            "text": { "type": "string", "minLength": 1, "maxLength": 10000 },
-            "language": { "type": "string", "default": "en" }
+            "text": { "type": "string", "minLength": 1, "maxLength": 10000 }
           },
           "required": ["text"]
         },
@@ -53,6 +98,7 @@
             "sentiment": { "type": "string", "enum": ["positive", "negative", "neutral", "mixed"] },
             "score": { "type": "number", "minimum": -1, "maximum": 1 },
             "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+            "meeting_tone": { "type": "string" },
             "emotions": {
               "type": "object",
               "properties": {
@@ -64,7 +110,7 @@
               }
             }
           },
-          "required": ["sentiment", "score", "confidence"]
+          "required": ["sentiment", "score", "confidence", "meeting_tone"]
         }
       }
     ]

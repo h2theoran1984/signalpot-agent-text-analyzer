@@ -2,13 +2,13 @@ import { anthropic } from "./anthropic.js";
 
 export interface SentimentInput {
   text: string;
-  language?: string;
 }
 
 export interface SentimentOutput {
   sentiment: "positive" | "negative" | "neutral" | "mixed";
   score: number;
   confidence: number;
+  meeting_tone: string;
   emotions: {
     joy: number;
     anger: number;
@@ -18,27 +18,28 @@ export interface SentimentOutput {
   };
 }
 
-export async function analyzeSentiment(input: SentimentInput): Promise<SentimentOutput> {
-  const prompt = `Analyze the sentiment of the following text. Return a JSON object with:
+const SENTIMENT_SYSTEM_PROMPT = `You analyze the emotional tone of meeting transcripts and conversations.
+
+Return a JSON object with:
 - "sentiment": one of "positive", "negative", "neutral", "mixed"
 - "score": number from -1 (very negative) to 1 (very positive)
-- "confidence": number from 0 to 1 indicating how confident you are
+- "confidence": number from 0 to 1
+- "meeting_tone": a short phrase describing the meeting dynamic (e.g. "productive and focused", "tense negotiation", "casual brainstorm", "urgent firefighting")
 - "emotions": object with scores 0-1 for: joy, anger, sadness, fear, surprise
 
-Text: ${input.text}
+Respond with ONLY valid JSON, no markdown, no code blocks.`;
 
-Respond with only valid JSON, no markdown.`;
-
+export async function analyzeSentiment(input: SentimentInput): Promise<SentimentOutput> {
   const message = await anthropic.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 512,
-    messages: [{ role: "user", content: prompt }],
+    max_tokens: 256,
+    system: SENTIMENT_SYSTEM_PROMPT,
+    messages: [{ role: "user", content: input.text }],
   });
 
   const content = message.content[0];
-  if (content.type !== "text") throw new Error("Unexpected response type from Claude");
+  if (content.type !== "text") throw new Error("Unexpected response type");
 
-  // Strip accidental markdown fences from Claude's response
   let text = content.text.trim();
   if (text.startsWith("```")) {
     text = text.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");

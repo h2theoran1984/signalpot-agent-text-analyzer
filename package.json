@@ -1,7 +1,7 @@
 {
   "name": "signalpot-agent-text-analyzer",
-  "version": "0.1.0",
-  "description": "SignalPot showcase agent: text summary + sentiment analysis powered by Claude Haiku",
+  "version": "0.2.0",
+  "description": "The Next Step — meeting summary specialist. Extracts action items with owners, due dates, and next steps.",
   "private": true,
   "scripts": {
     "dev": "node -e \"const {createServer} = require('http'); require('@vercel/node')\"",
