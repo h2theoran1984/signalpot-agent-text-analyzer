@@ -58,7 +58,7 @@ ${input.text}`;
 
   const message = await anthropic.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 512,
+    max_tokens: 1536,
     system: MEETING_SYSTEM_PROMPT,
     messages: [{ role: "user", content: userPrompt }],
   });
@@ -97,7 +97,7 @@ Respond with ONLY valid JSON, no markdown, no code blocks:
 export async function extractActionItems(input: { text: string }): Promise<ActionItemsOutput> {
   const message = await anthropic.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 512,
+    max_tokens: 1024,
     system: ACTION_ITEMS_SYSTEM_PROMPT,
     messages: [{ role: "user", content: input.text }],
   });
