@@ -27,7 +27,8 @@ const MEETING_SYSTEM_PROMPT = `Expert meeting summarizer. Concise, accurate, str
 Output ONLY valid JSON (no markdown, no explanation):
 {"summary":"2-3 sentences max","action_items":[{"task":"...","owner":"...","due":"...","notes":"...","next_step":"..."}],"decisions":["..."],"participants":["..."],"meeting_tone":"productive|tense|collaborative|unfocused|urgent"}
 
-Rules: Infer due dates or use "TBD". Unassigned if no owner. Decisions = firm commitments only. Keep every field SHORT — no filler, no redundancy. notes and next_step should each be under 15 words.`;
+Rules: Infer due dates or use "TBD". Unassigned if no owner. Decisions = firm commitments only.
+BREVITY IS CRITICAL: summary under 40 words. Each notes/next_step under 8 words. Each task under 12 words. Each decision under 15 words. Minimize total output tokens.`;
 
 export async function summarizeMeeting(input: MeetingSummaryInput): Promise<MeetingSummaryOutput> {
   const contextLine = input.context ? `\nMeeting context: ${input.context}\n` : "";
@@ -37,7 +38,7 @@ ${input.text}`;
 
   const message = await anthropic.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 1024,
+    max_tokens: 512,
     system: MEETING_SYSTEM_PROMPT,
     messages: [{ role: "user", content: userPrompt }],
   });
@@ -69,7 +70,7 @@ Rules: "TBD" if no due date. "Unassigned" if no owner. Keep fields SHORT — und
 export async function extractActionItems(input: { text: string }): Promise<ActionItemsOutput> {
   const message = await anthropic.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 1024,
+    max_tokens: 512,
     system: ACTION_ITEMS_SYSTEM_PROMPT,
     messages: [{ role: "user", content: input.text }],
   });
