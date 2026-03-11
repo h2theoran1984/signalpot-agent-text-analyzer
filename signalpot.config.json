@@ -7,7 +7,7 @@
   "agent_type": "reactive",
   "auth_type": "none",
   "rate_type": "per_call",
-  "rate_amount": 0.001,
+  "rate_amount": 0.003,
   "tags": ["meetings", "action-items", "summary", "productivity", "nlp", "claude"],
   "capability_schema": {
     "capabilities": [

@@ -8,7 +8,7 @@ export const anthropic = new Anthropic({
 const HAIKU_INPUT_PER_TOKEN = 1.0 / 1_000_000;   // $1.00 / 1M tokens
 const HAIKU_OUTPUT_PER_TOKEN = 5.0 / 1_000_000;   // $5.00 / 1M tokens
 
-const RATE_AMOUNT = 0.001; // what we charge per call (USD)
+const RATE_AMOUNT = 0.003; // what we charge per call (USD)
 
 export interface CostInfo {
   input_tokens: number;
