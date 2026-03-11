@@ -1,4 +1,5 @@
-import { anthropic } from "./anthropic.js";
+import { anthropic, logApiCost } from "./anthropic.js";
+import { trackCost } from "./cost-tracker.js";
 
 export interface SentimentInput {
   text: string;
@@ -36,6 +37,9 @@ export async function analyzeSentiment(input: SentimentInput): Promise<Sentiment
     system: SENTIMENT_SYSTEM_PROMPT,
     messages: [{ role: "user", content: input.text }],
   });
+
+  const cost = logApiCost("sentiment", message.usage);
+  trackCost("sentiment", { ...cost, revenue_usd: cost.revenue_usd });
 
   const content = message.content[0];
   if (content.type !== "text") throw new Error("Unexpected response type");

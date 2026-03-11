@@ -1,4 +1,5 @@
-import { anthropic } from "./anthropic.js";
+import { anthropic, logApiCost } from "./anthropic.js";
+import { trackCost } from "./cost-tracker.js";
 
 export interface MeetingSummaryInput {
   text: string;
@@ -41,6 +42,9 @@ ${input.text}`;
     messages: [{ role: "user", content: userPrompt }],
   });
 
+  const cost = logApiCost("meeting-summary", message.usage);
+  trackCost("meeting-summary", { ...cost, revenue_usd: cost.revenue_usd });
+
   const content = message.content[0];
   if (content.type !== "text") throw new Error("Unexpected response type");
 
@@ -69,6 +73,9 @@ export async function extractActionItems(input: { text: string }): Promise<Actio
     system: ACTION_ITEMS_SYSTEM_PROMPT,
     messages: [{ role: "user", content: input.text }],
   });
+
+  const cost = logApiCost("action-items", message.usage);
+  trackCost("action-items", { ...cost, revenue_usd: cost.revenue_usd });
 
   const content = message.content[0];
   if (content.type !== "text") throw new Error("Unexpected response type");

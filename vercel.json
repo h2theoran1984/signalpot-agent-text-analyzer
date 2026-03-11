@@ -9,6 +9,7 @@
     { "src": "/health", "dest": "/api/health.ts" },
     { "src": "/mcp/tools", "dest": "/api/mcp/tools.ts" },
     { "src": "/a2a/rpc", "dest": "/api/a2a/rpc.ts" },
-    { "src": "/a2a/agent-card", "dest": "/api/a2a/agent-card.ts" }
+    { "src": "/a2a/agent-card", "dest": "/api/a2a/agent-card.ts" },
+    { "src": "/costs", "dest": "/api/costs.ts" }
   ]
 }
