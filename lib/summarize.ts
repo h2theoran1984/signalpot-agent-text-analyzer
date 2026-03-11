@@ -21,34 +21,12 @@ export interface MeetingSummaryOutput {
   meeting_tone: string;
 }
 
-const MEETING_SYSTEM_PROMPT = `You are The Next Step — an elite meeting analyst. Your job is to extract maximum clarity from meeting transcripts. You are ruthlessly concise and structured.
+const MEETING_SYSTEM_PROMPT = `Expert meeting summarizer. Concise, accurate, structured. Never fabricate facts.
 
-RULES:
-- Summary must be exactly 2-3 sentences. No more.
-- Every action item MUST have: task, owner, due, notes, next_step
-- If no due date is mentioned, infer one or write "TBD"
-- If no owner is clear, write "Unassigned"
-- The "next_step" field describes the immediate next action the owner should take
-- Decisions are firm commitments made during the meeting, not suggestions
-- Participants are people mentioned by name
-- meeting_tone must be one of: productive, tense, collaborative, unfocused, urgent
+Output ONLY valid JSON (no markdown, no explanation):
+{"summary":"2-3 sentences max","action_items":[{"task":"...","owner":"...","due":"...","notes":"...","next_step":"..."}],"decisions":["..."],"participants":["..."],"meeting_tone":"productive|tense|collaborative|unfocused|urgent"}
 
-OUTPUT FORMAT — respond with ONLY valid JSON, no markdown, no code blocks, no explanation:
-{
-  "summary": "2-3 sentence overview",
-  "action_items": [
-    {
-      "task": "what needs to be done",
-      "owner": "who is doing it",
-      "due": "when it is due",
-      "notes": "relevant context or blockers",
-      "next_step": "the immediate next action (owner)"
-    }
-  ],
-  "decisions": ["decision 1", "decision 2"],
-  "participants": ["Name1", "Name2"],
-  "meeting_tone": "productive"
-}`;
+Rules: Infer due dates or use "TBD". Unassigned if no owner. Decisions = firm commitments only. Keep every field SHORT — no filler, no redundancy. notes and next_step should each be under 15 words.`;
 
 export async function summarizeMeeting(input: MeetingSummaryInput): Promise<MeetingSummaryOutput> {
   const contextLine = input.context ? `\nMeeting context: ${input.context}\n` : "";
@@ -58,7 +36,7 @@ ${input.text}`;
 
   const message = await anthropic.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 1536,
+    max_tokens: 1024,
     system: MEETING_SYSTEM_PROMPT,
     messages: [{ role: "user", content: userPrompt }],
   });
@@ -80,19 +58,9 @@ export interface ActionItemsOutput {
   count: number;
 }
 
-const ACTION_ITEMS_SYSTEM_PROMPT = `You extract action items from meeting transcripts. Nothing else.
-
-Every action item MUST have: task, owner, due, notes, next_step.
-If no due date is mentioned, write "TBD". If no owner is clear, write "Unassigned".
-The "next_step" field is the immediate next action the owner should take.
-
-Respond with ONLY valid JSON, no markdown, no code blocks:
-{
-  "action_items": [
-    { "task": "...", "owner": "...", "due": "...", "notes": "...", "next_step": "..." }
-  ],
-  "count": 0
-}`;
+const ACTION_ITEMS_SYSTEM_PROMPT = `Extract action items from meeting transcripts. Output ONLY valid JSON (no markdown).
+{"action_items":[{"task":"...","owner":"...","due":"...","notes":"...","next_step":"..."}],"count":0}
+Rules: "TBD" if no due date. "Unassigned" if no owner. Keep fields SHORT — under 15 words each.`;
 
 export async function extractActionItems(input: { text: string }): Promise<ActionItemsOutput> {
   const message = await anthropic.messages.create({
