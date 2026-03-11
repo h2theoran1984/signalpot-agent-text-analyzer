@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import type { JSONRPCRequest, JSONRPCResponse, MessageSendParams } from "../../lib/a2a-types.js";
+import type { CostInfo } from "../../lib/anthropic.js";
 import { summarizeMeeting, extractActionItems } from "../../lib/summarize.js";
 import { analyzeSentiment } from "../../lib/sentiment.js";
 
@@ -19,22 +20,36 @@ async function handleMessageSend(params: MessageSendParams): Promise<unknown> {
   const text = (dataPart?.data?.text as string) ?? textPart?.text ?? "";
   if (!text) throw new Error("Missing text input");
 
-  let result: unknown;
+  let data: unknown;
+  let cost: CostInfo;
 
   if (capability === "signalpot/action-items@v1") {
-    result = await extractActionItems({ text });
+    const result = await extractActionItems({ text });
+    data = result.data;
+    cost = result.cost;
   } else if (capability === "signalpot/sentiment@v1") {
-    result = await analyzeSentiment({ text });
+    const result = await analyzeSentiment({ text });
+    data = result.data;
+    cost = result.cost;
   } else {
     // Default: meeting-summary
     const context = (dataPart?.data?.context as string) ?? undefined;
-    result = await summarizeMeeting({ text, context });
+    const result = await summarizeMeeting({ text, context });
+    data = result.data;
+    cost = result.cost;
   }
 
   return {
     id: crypto.randomUUID(),
     status: { state: "completed" },
-    artifacts: [{ parts: [{ type: "data", data: result }] }],
+    artifacts: [{ parts: [{ type: "data", data }] }],
+    _meta: {
+      provider_cost: {
+        api_cost_usd: cost.api_cost_usd,
+        input_tokens: cost.input_tokens,
+        output_tokens: cost.output_tokens,
+      },
+    },
   };
 }
 

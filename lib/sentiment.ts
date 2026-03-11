@@ -1,4 +1,4 @@
-import { anthropic, logApiCost } from "./anthropic.js";
+import { anthropic, logApiCost, type CostInfo } from "./anthropic.js";
 import { trackCost } from "./cost-tracker.js";
 
 export interface SentimentInput {
@@ -30,7 +30,7 @@ Return a JSON object with:
 
 Respond with ONLY valid JSON, no markdown, no code blocks.`;
 
-export async function analyzeSentiment(input: SentimentInput): Promise<SentimentOutput> {
+export async function analyzeSentiment(input: SentimentInput): Promise<{ data: SentimentOutput; cost: CostInfo }> {
   const message = await anthropic.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 256,
@@ -49,5 +49,5 @@ export async function analyzeSentiment(input: SentimentInput): Promise<Sentiment
     text = text.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
   }
 
-  return JSON.parse(text);
+  return { data: JSON.parse(text), cost };
 }

@@ -1,4 +1,4 @@
-import { anthropic, logApiCost } from "./anthropic.js";
+import { anthropic, logApiCost, type CostInfo } from "./anthropic.js";
 import { trackCost } from "./cost-tracker.js";
 
 export interface MeetingSummaryInput {
@@ -30,7 +30,7 @@ Output ONLY valid JSON (no markdown, no explanation):
 Rules: Infer due dates or use "TBD". Unassigned if no owner. Decisions = firm commitments only.
 BREVITY IS CRITICAL: summary under 40 words. Each notes/next_step under 8 words. Each task under 12 words. Each decision under 15 words. Minimize total output tokens.`;
 
-export async function summarizeMeeting(input: MeetingSummaryInput): Promise<MeetingSummaryOutput> {
+export async function summarizeMeeting(input: MeetingSummaryInput): Promise<{ data: MeetingSummaryOutput; cost: CostInfo }> {
   const contextLine = input.context ? `\nMeeting context: ${input.context}\n` : "";
 
   const userPrompt = `${contextLine}Meeting transcript:
@@ -54,7 +54,7 @@ ${input.text}`;
     text = text.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
   }
 
-  return JSON.parse(text);
+  return { data: JSON.parse(text), cost };
 }
 
 // Lightweight action-items-only extraction
@@ -67,7 +67,7 @@ const ACTION_ITEMS_SYSTEM_PROMPT = `Extract action items from meeting transcript
 {"action_items":[{"task":"...","owner":"...","due":"...","notes":"...","next_step":"..."}],"count":0}
 Rules: "TBD" if no due date. "Unassigned" if no owner. Keep fields SHORT — under 15 words each.`;
 
-export async function extractActionItems(input: { text: string }): Promise<ActionItemsOutput> {
+export async function extractActionItems(input: { text: string }): Promise<{ data: ActionItemsOutput; cost: CostInfo }> {
   const message = await anthropic.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 512,
@@ -88,7 +88,10 @@ export async function extractActionItems(input: { text: string }): Promise<Actio
 
   const parsed = JSON.parse(text);
   return {
-    action_items: parsed.action_items,
-    count: parsed.action_items.length,
+    data: {
+      action_items: parsed.action_items,
+      count: parsed.action_items.length,
+    },
+    cost,
   };
 }
