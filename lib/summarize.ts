@@ -1,5 +1,6 @@
 import { anthropic, logApiCost, type CostInfo } from "./anthropic.js";
 import { trackCost } from "./cost-tracker.js";
+import { getActivePrompt } from "./prompt-loader.js";
 
 export interface MeetingSummaryInput {
   text: string;
@@ -31,15 +32,16 @@ Rules: Infer due dates or use "TBD". Unassigned if no owner. Decisions = firm co
 BREVITY IS CRITICAL: summary under 40 words. Each notes/next_step under 8 words. Each task under 12 words. Each decision under 15 words. Minimize total output tokens.`;
 
 export async function summarizeMeeting(input: MeetingSummaryInput): Promise<{ data: MeetingSummaryOutput; cost: CostInfo }> {
+  const config = await getActivePrompt("signalpot/meeting-summary@v1");
   const contextLine = input.context ? `\nMeeting context: ${input.context}\n` : "";
 
   const userPrompt = `${contextLine}Meeting transcript:
 ${input.text}`;
 
   const message = await anthropic.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 512,
-    system: MEETING_SYSTEM_PROMPT,
+    model: config.model,
+    max_tokens: config.max_tokens,
+    system: config.system_prompt,
     messages: [{ role: "user", content: userPrompt }],
   });
 
@@ -68,10 +70,12 @@ const ACTION_ITEMS_SYSTEM_PROMPT = `Extract action items from meeting transcript
 Rules: "TBD" if no due date. "Unassigned" if no owner. Keep fields SHORT — under 15 words each.`;
 
 export async function extractActionItems(input: { text: string }): Promise<{ data: ActionItemsOutput; cost: CostInfo }> {
+  const config = await getActivePrompt("signalpot/action-items@v1");
+
   const message = await anthropic.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 512,
-    system: ACTION_ITEMS_SYSTEM_PROMPT,
+    model: config.model,
+    max_tokens: config.max_tokens,
+    system: config.system_prompt,
     messages: [{ role: "user", content: input.text }],
   });
 

@@ -1,5 +1,6 @@
 import { anthropic, logApiCost, type CostInfo } from "./anthropic.js";
 import { trackCost } from "./cost-tracker.js";
+import { getActivePrompt } from "./prompt-loader.js";
 
 export interface SentimentInput {
   text: string;
@@ -31,10 +32,12 @@ Return a JSON object with:
 Respond with ONLY valid JSON, no markdown, no code blocks.`;
 
 export async function analyzeSentiment(input: SentimentInput): Promise<{ data: SentimentOutput; cost: CostInfo }> {
+  const config = await getActivePrompt("signalpot/sentiment@v1");
+
   const message = await anthropic.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 256,
-    system: SENTIMENT_SYSTEM_PROMPT,
+    model: config.model,
+    max_tokens: config.max_tokens,
+    system: config.system_prompt,
     messages: [{ role: "user", content: input.text }],
   });
 
