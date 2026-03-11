@@ -43,7 +43,7 @@ ${input.text}`;
   });
 
   const cost = logApiCost("meeting-summary", message.usage);
-  trackCost("meeting-summary", { ...cost, revenue_usd: cost.revenue_usd });
+  await trackCost("meeting-summary", { ...cost, revenue_usd: cost.revenue_usd });
 
   const content = message.content[0];
   if (content.type !== "text") throw new Error("Unexpected response type");
@@ -75,7 +75,7 @@ export async function extractActionItems(input: { text: string }): Promise<Actio
   });
 
   const cost = logApiCost("action-items", message.usage);
-  trackCost("action-items", { ...cost, revenue_usd: cost.revenue_usd });
+  await trackCost("action-items", { ...cost, revenue_usd: cost.revenue_usd });
 
   const content = message.content[0];
   if (content.type !== "text") throw new Error("Unexpected response type");

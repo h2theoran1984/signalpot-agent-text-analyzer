@@ -39,7 +39,7 @@ export async function analyzeSentiment(input: SentimentInput): Promise<Sentiment
   });
 
   const cost = logApiCost("sentiment", message.usage);
-  trackCost("sentiment", { ...cost, revenue_usd: cost.revenue_usd });
+  await trackCost("sentiment", { ...cost, revenue_usd: cost.revenue_usd });
 
   const content = message.content[0];
   if (content.type !== "text") throw new Error("Unexpected response type");
