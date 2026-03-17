@@ -24,7 +24,12 @@ Output ONLY valid JSON (no markdown, no explanation):
 {"summary":"2-3 sentences max","action_items":[{"task":"...","owner":"...","due":"...","notes":"...","next_step":"..."}],"decisions":["..."],"participants":["..."],"meeting_tone":"productive|tense|collaborative|unfocused|urgent"}
 
 Rules: Infer due dates or use "TBD". Unassigned if no owner. Decisions = firm commitments only.
-DATE RULES: First identify the meeting's weekday and date from the transcript. Then map relative days to absolute dates by counting forward from that date. Example: if a meeting is on Monday March 9, then "Tuesday" = March 10, "Wednesday" = March 11, "Thursday" = March 12, "Friday" = March 13. "Tomorrow" = the next calendar day. Never add an extra day — "Tuesday" after a Monday meeting is always +1, not +2. Use ISO format YYYY-MM-DD for due dates.
+DATE RULES (MANDATORY — never skip):
+1. Find the meeting date. Use the explicit date from the transcript, OR the "Meeting date:" header injected before the transcript.
+2. Determine what day of the week the meeting falls on.
+3. Convert EVERY relative reference ("today", "tomorrow", "Tuesday", "EOD", "next week") to an absolute YYYY-MM-DD date. "Today" = meeting date. "Tomorrow" = meeting date + 1 calendar day. Named days (e.g. "Wednesday") = the next occurrence of that day counting forward from the meeting date.
+4. The "due" field MUST always be YYYY-MM-DD format. NEVER output relative words like "Tuesday EOD", "Tomorrow noon", or "Friday". Strip time qualifiers (EOD, noon, 2pm) — only output the date.
+5. Example: meeting on Monday 2026-03-09 → "today" = 2026-03-09, "tomorrow noon" = 2026-03-10, "Tuesday EOD" = 2026-03-10, "Wednesday" = 2026-03-11, "Friday" = 2026-03-13.
 BREVITY IS CRITICAL: summary under 40 words. Each notes/next_step under 8 words. Each task under 12 words. Each decision under 15 words. Minimize total output tokens.`,
     model: "claude-haiku-4-5-20251001",
     max_tokens: 512,
@@ -34,7 +39,12 @@ BREVITY IS CRITICAL: summary under 40 words. Each notes/next_step under 8 words.
     system_prompt: `Extract action items from meeting transcripts. Output ONLY valid JSON (no markdown).
 {"action_items":[{"task":"...","owner":"...","due":"...","notes":"...","next_step":"..."}],"count":0}
 Rules: "TBD" if no due date. "Unassigned" if no owner. Keep fields SHORT — under 15 words each.
-DATE RULES: First identify the meeting's weekday and date from the transcript. Then map relative days to absolute dates by counting forward from that date. Example: if a meeting is on Monday March 9, then "Tuesday" = March 10, "Wednesday" = March 11, "Friday" = March 13. "Tomorrow" = the next calendar day. Never add an extra day. Use ISO format YYYY-MM-DD.`,
+DATE RULES (MANDATORY — never skip):
+1. Find the meeting date. Use the explicit date from the transcript, OR the "Meeting date:" header injected before the transcript.
+2. Determine what day of the week the meeting falls on.
+3. Convert EVERY relative reference ("today", "tomorrow", "Tuesday", "EOD", "next week") to an absolute YYYY-MM-DD date. "Today" = meeting date. "Tomorrow" = meeting date + 1 calendar day. Named days = next occurrence counting forward from meeting date.
+4. The "due" field MUST always be YYYY-MM-DD format. NEVER output relative words. Strip time qualifiers (EOD, noon, 2pm).
+5. Example: meeting on Monday 2026-03-09 → "today" = 2026-03-09, "tomorrow noon" = 2026-03-10, "Tuesday EOD" = 2026-03-10, "Friday" = 2026-03-13.`,
     model: "claude-haiku-4-5-20251001",
     max_tokens: 512,
     temperature: 0,
