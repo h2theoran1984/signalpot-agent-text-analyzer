@@ -30,11 +30,16 @@ Output ONLY valid JSON (no markdown, no explanation):
 
 Rules: Infer due dates or use "TBD". Unassigned if no owner. Decisions = firm commitments only.
 DATE RULES (MANDATORY — never skip):
-1. Find the meeting date. Use the explicit date from the transcript, OR the "Meeting date:" header injected before the transcript.
-2. Determine what day of the week the meeting falls on.
-3. Convert EVERY relative reference ("today", "tomorrow", "Tuesday", "EOD", "next week") to an absolute YYYY-MM-DD date. "Today" = meeting date. "Tomorrow" = meeting date + 1 calendar day. Named days (e.g. "Wednesday") = the next occurrence of that day counting forward from the meeting date.
-4. The "due" field MUST always be YYYY-MM-DD format. NEVER output relative words like "Tuesday EOD", "Tomorrow noon", or "Friday". Strip time qualifiers (EOD, noon, 2pm) — only output the date.
-5. Example: meeting on Monday 2026-03-09 → "today" = 2026-03-09, "tomorrow noon" = 2026-03-10, "Tuesday EOD" = 2026-03-10, "Wednesday" = 2026-03-11, "Friday" = 2026-03-13.
+1. Find the meeting date and its day-of-week from the transcript or the "Meeting date:" header.
+2. Use this offset table to convert named days. Add the offset to the meeting date:
+   If meeting is MONDAY:    Mon=+0 Tue=+1 Wed=+2 Thu=+3 Fri=+4 Sat=+5 Sun=+6
+   If meeting is TUESDAY:   Tue=+0 Wed=+1 Thu=+2 Fri=+3 Sat=+4 Sun=+5 Mon=+6
+   If meeting is WEDNESDAY: Wed=+0 Thu=+1 Fri=+2 Sat=+3 Sun=+4 Mon=+5 Tue=+6
+   If meeting is THURSDAY:  Thu=+0 Fri=+1 Sat=+2 Sun=+3 Mon=+4 Tue=+5 Wed=+6
+   If meeting is FRIDAY:    Fri=+0 Sat=+1 Sun=+2 Mon=+3 Tue=+4 Wed=+5 Thu=+6
+3. "Today" = +0. "Tomorrow" = +1. "End of day"/"EOD" = +0 (same day).
+4. Output "due" as YYYY-MM-DD only. NEVER output words like "Tuesday", "Friday", "Tomorrow", "EOD".
+5. Example: Monday 2026-03-09 → "today"=2026-03-09, "tomorrow"=2026-03-10, "Tuesday EOD"=2026-03-10, "Wednesday"=2026-03-11, "Friday"=2026-03-13.
 BREVITY IS CRITICAL: summary under 40 words. Each notes/next_step under 8 words. Each task under 12 words. Each decision under 15 words. Minimize total output tokens.`;
 
 export async function summarizeMeeting(input: MeetingSummaryInput): Promise<{ data: MeetingSummaryOutput; cost: CostInfo }> {
@@ -82,11 +87,16 @@ const ACTION_ITEMS_SYSTEM_PROMPT = `Extract action items from meeting transcript
 {"action_items":[{"task":"...","owner":"...","due":"...","notes":"...","next_step":"..."}],"count":0}
 Rules: "TBD" if no due date. "Unassigned" if no owner. Keep fields SHORT — under 15 words each.
 DATE RULES (MANDATORY — never skip):
-1. Find the meeting date. Use the explicit date from the transcript, OR the "Meeting date:" header injected before the transcript.
-2. Determine what day of the week the meeting falls on.
-3. Convert EVERY relative reference ("today", "tomorrow", "Tuesday", "EOD", "next week") to an absolute YYYY-MM-DD date. "Today" = meeting date. "Tomorrow" = meeting date + 1 calendar day. Named days = next occurrence counting forward from meeting date.
-4. The "due" field MUST always be YYYY-MM-DD format. NEVER output relative words. Strip time qualifiers (EOD, noon, 2pm).
-5. Example: meeting on Monday 2026-03-09 → "today" = 2026-03-09, "tomorrow noon" = 2026-03-10, "Tuesday EOD" = 2026-03-10, "Friday" = 2026-03-13.`;
+1. Find the meeting date and its day-of-week from the transcript or the "Meeting date:" header.
+2. Use this offset table to convert named days. Add the offset to the meeting date:
+   If meeting is MONDAY:    Mon=+0 Tue=+1 Wed=+2 Thu=+3 Fri=+4 Sat=+5 Sun=+6
+   If meeting is TUESDAY:   Tue=+0 Wed=+1 Thu=+2 Fri=+3 Sat=+4 Sun=+5 Mon=+6
+   If meeting is WEDNESDAY: Wed=+0 Thu=+1 Fri=+2 Sat=+3 Sun=+4 Mon=+5 Tue=+6
+   If meeting is THURSDAY:  Thu=+0 Fri=+1 Sat=+2 Sun=+3 Mon=+4 Tue=+5 Wed=+6
+   If meeting is FRIDAY:    Fri=+0 Sat=+1 Sun=+2 Mon=+3 Tue=+4 Wed=+5 Thu=+6
+3. "Today" = +0. "Tomorrow" = +1. "End of day"/"EOD" = +0 (same day).
+4. Output "due" as YYYY-MM-DD only. NEVER output words like "Tuesday", "Friday", "Tomorrow", "EOD".
+5. Example: Monday 2026-03-09 → "today"=2026-03-09, "tomorrow"=2026-03-10, "Tuesday EOD"=2026-03-10, "Wednesday"=2026-03-11, "Friday"=2026-03-13.`;
 
 export async function extractActionItems(input: { text: string }): Promise<{ data: ActionItemsOutput; cost: CostInfo }> {
   const config = await getActivePrompt("signalpot/action-items@v1");
