@@ -25,7 +25,7 @@ Output ONLY valid JSON (no markdown, no explanation):
 
 Rules: Infer due dates or use "TBD". Unassigned if no owner. Decisions = firm commitments only.
 DATE RULES (MANDATORY — never skip):
-1. Find the meeting date and its day-of-week from the transcript or the "Meeting date:" header.
+1. Find the meeting date and its day-of-week from the transcript.
 2. Use this offset table to convert named days. Add the offset to the meeting date:
    If meeting is MONDAY:    Mon=+0 Tue=+1 Wed=+2 Thu=+3 Fri=+4 Sat=+5 Sun=+6
    If meeting is TUESDAY:   Tue=+0 Wed=+1 Thu=+2 Fri=+3 Sat=+4 Sun=+5 Mon=+6
@@ -45,7 +45,7 @@ BREVITY IS CRITICAL: summary under 40 words. Each notes/next_step under 8 words.
 {"action_items":[{"task":"...","owner":"...","due":"...","notes":"...","next_step":"..."}],"count":0}
 Rules: "TBD" if no due date. "Unassigned" if no owner. Keep fields SHORT — under 15 words each.
 DATE RULES (MANDATORY — never skip):
-1. Find the meeting date and its day-of-week from the transcript or the "Meeting date:" header.
+1. Find the meeting date and its day-of-week from the transcript.
 2. Use this offset table to convert named days. Add the offset to the meeting date:
    If meeting is MONDAY:    Mon=+0 Tue=+1 Wed=+2 Thu=+3 Fri=+4 Sat=+5 Sun=+6
    If meeting is TUESDAY:   Tue=+0 Wed=+1 Thu=+2 Fri=+3 Sat=+4 Sun=+5 Mon=+6

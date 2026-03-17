@@ -30,7 +30,7 @@ Output ONLY valid JSON (no markdown, no explanation):
 
 Rules: Infer due dates or use "TBD". Unassigned if no owner. Decisions = firm commitments only.
 DATE RULES (MANDATORY — never skip):
-1. Find the meeting date and its day-of-week from the transcript or the "Meeting date:" header.
+1. Find the meeting date and its day-of-week from the transcript.
 2. Use this offset table to convert named days. Add the offset to the meeting date:
    If meeting is MONDAY:    Mon=+0 Tue=+1 Wed=+2 Thu=+3 Fri=+4 Sat=+5 Sun=+6
    If meeting is TUESDAY:   Tue=+0 Wed=+1 Thu=+2 Fri=+3 Sat=+4 Sun=+5 Mon=+6
@@ -46,14 +46,7 @@ export async function summarizeMeeting(input: MeetingSummaryInput): Promise<{ da
   const config = await getActivePrompt("signalpot/meeting-summary@v1");
   const contextLine = input.context ? `\nMeeting context: ${input.context}\n` : "";
 
-  // Inject current date so the model has an anchor for resolving relative dates
-  const now = new Date();
-  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const isoDate = now.toISOString().split("T")[0];
-  const dayName = days[now.getDay()];
-  const dateLine = `Meeting date (use as fallback if not stated in transcript): ${isoDate} (${dayName})\n`;
-
-  const userPrompt = `${dateLine}${contextLine}Meeting transcript:
+  const userPrompt = `${contextLine}Meeting transcript:
 ${input.text}`;
 
   const message = await anthropic.messages.create({
@@ -87,7 +80,7 @@ const ACTION_ITEMS_SYSTEM_PROMPT = `Extract action items from meeting transcript
 {"action_items":[{"task":"...","owner":"...","due":"...","notes":"...","next_step":"..."}],"count":0}
 Rules: "TBD" if no due date. "Unassigned" if no owner. Keep fields SHORT — under 15 words each.
 DATE RULES (MANDATORY — never skip):
-1. Find the meeting date and its day-of-week from the transcript or the "Meeting date:" header.
+1. Find the meeting date and its day-of-week from the transcript.
 2. Use this offset table to convert named days. Add the offset to the meeting date:
    If meeting is MONDAY:    Mon=+0 Tue=+1 Wed=+2 Thu=+3 Fri=+4 Sat=+5 Sun=+6
    If meeting is TUESDAY:   Tue=+0 Wed=+1 Thu=+2 Fri=+3 Sat=+4 Sun=+5 Mon=+6
@@ -101,18 +94,11 @@ DATE RULES (MANDATORY — never skip):
 export async function extractActionItems(input: { text: string }): Promise<{ data: ActionItemsOutput; cost: CostInfo }> {
   const config = await getActivePrompt("signalpot/action-items@v1");
 
-  // Inject current date so the model has an anchor for resolving relative dates
-  const now = new Date();
-  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const isoDate = now.toISOString().split("T")[0];
-  const dayName = days[now.getDay()];
-  const dateLine = `Meeting date (use as fallback if not stated in transcript): ${isoDate} (${dayName})\n\n`;
-
   const message = await anthropic.messages.create({
     model: config.model,
     max_tokens: config.max_tokens,
     system: config.system_prompt,
-    messages: [{ role: "user", content: dateLine + input.text }],
+    messages: [{ role: "user", content: input.text }],
   });
 
   const cost = logApiCost("action-items", message.usage);
