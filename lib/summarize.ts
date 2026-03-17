@@ -29,6 +29,7 @@ Output ONLY valid JSON (no markdown, no explanation):
 {"summary":"2-3 sentences max","action_items":[{"task":"...","owner":"...","due":"...","notes":"...","next_step":"..."}],"decisions":["..."],"participants":["..."],"meeting_tone":"productive|tense|collaborative|unfocused|urgent"}
 
 Rules: Infer due dates or use "TBD". Unassigned if no owner. Decisions = firm commitments only.
+DATE RULES: First identify the meeting's weekday and date from the transcript. Then map relative days to absolute dates by counting forward from that date. Example: if a meeting is on Monday March 9, then "Tuesday" = March 10, "Wednesday" = March 11, "Thursday" = March 12, "Friday" = March 13. "Tomorrow" = the next calendar day. Never add an extra day — "Tuesday" after a Monday meeting is always +1, not +2. Use ISO format YYYY-MM-DD for due dates.
 BREVITY IS CRITICAL: summary under 40 words. Each notes/next_step under 8 words. Each task under 12 words. Each decision under 15 words. Minimize total output tokens.`;
 
 export async function summarizeMeeting(input: MeetingSummaryInput): Promise<{ data: MeetingSummaryOutput; cost: CostInfo }> {
@@ -67,7 +68,8 @@ export interface ActionItemsOutput {
 
 const ACTION_ITEMS_SYSTEM_PROMPT = `Extract action items from meeting transcripts. Output ONLY valid JSON (no markdown).
 {"action_items":[{"task":"...","owner":"...","due":"...","notes":"...","next_step":"..."}],"count":0}
-Rules: "TBD" if no due date. "Unassigned" if no owner. Keep fields SHORT — under 15 words each.`;
+Rules: "TBD" if no due date. "Unassigned" if no owner. Keep fields SHORT — under 15 words each.
+DATE RULES: First identify the meeting's weekday and date from the transcript. Then map relative days to absolute dates by counting forward from that date. Example: if a meeting is on Monday March 9, then "Tuesday" = March 10, "Wednesday" = March 11, "Friday" = March 13. "Tomorrow" = the next calendar day. Never add an extra day. Use ISO format YYYY-MM-DD.`;
 
 export async function extractActionItems(input: { text: string }): Promise<{ data: ActionItemsOutput; cost: CostInfo }> {
   const config = await getActivePrompt("signalpot/action-items@v1");
