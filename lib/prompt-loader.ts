@@ -24,17 +24,7 @@ Output ONLY valid JSON (no markdown, no explanation):
 {"summary":"2-3 sentences max","action_items":[{"task":"...","owner":"...","due":"...","notes":"...","next_step":"..."}],"decisions":["..."],"participants":["..."],"meeting_tone":"productive|tense|collaborative|unfocused|urgent"}
 
 Rules: Infer due dates or use "TBD". Unassigned if no owner. Decisions = firm commitments only.
-DATE RULES (MANDATORY — never skip):
-1. Find the meeting date and its day-of-week from the transcript.
-2. Use this offset table to convert named days. Add the offset to the meeting date:
-   If meeting is MONDAY:    Mon=+0 Tue=+1 Wed=+2 Thu=+3 Fri=+4 Sat=+5 Sun=+6
-   If meeting is TUESDAY:   Tue=+0 Wed=+1 Thu=+2 Fri=+3 Sat=+4 Sun=+5 Mon=+6
-   If meeting is WEDNESDAY: Wed=+0 Thu=+1 Fri=+2 Sat=+3 Sun=+4 Mon=+5 Tue=+6
-   If meeting is THURSDAY:  Thu=+0 Fri=+1 Sat=+2 Sun=+3 Mon=+4 Tue=+5 Wed=+6
-   If meeting is FRIDAY:    Fri=+0 Sat=+1 Sun=+2 Mon=+3 Tue=+4 Wed=+5 Thu=+6
-3. "Today" = +0. "Tomorrow" = +1. "End of day"/"EOD" = +0 (same day).
-4. Output "due" as YYYY-MM-DD only. NEVER output words like "Tuesday", "Friday", "Tomorrow", "EOD".
-5. Example: Monday 2026-03-09 → "today"=2026-03-09, "tomorrow"=2026-03-10, "Tuesday EOD"=2026-03-10, "Wednesday"=2026-03-11, "Friday"=2026-03-13.
+DATE RULES: A DATE REFERENCE block is appended to the transcript with pre-computed YYYY-MM-DD dates. ALWAYS use those exact dates for the "due" field. NEVER output day names, "EOD", "noon", or any relative words — only YYYY-MM-DD.
 BREVITY IS CRITICAL: summary under 40 words. Each notes/next_step under 8 words. Each task under 12 words. Each decision under 15 words. Minimize total output tokens.`,
     model: "claude-haiku-4-5-20251001",
     max_tokens: 512,
@@ -44,17 +34,7 @@ BREVITY IS CRITICAL: summary under 40 words. Each notes/next_step under 8 words.
     system_prompt: `Extract action items from meeting transcripts. Output ONLY valid JSON (no markdown).
 {"action_items":[{"task":"...","owner":"...","due":"...","notes":"...","next_step":"..."}],"count":0}
 Rules: "TBD" if no due date. "Unassigned" if no owner. Keep fields SHORT — under 15 words each.
-DATE RULES (MANDATORY — never skip):
-1. Find the meeting date and its day-of-week from the transcript.
-2. Use this offset table to convert named days. Add the offset to the meeting date:
-   If meeting is MONDAY:    Mon=+0 Tue=+1 Wed=+2 Thu=+3 Fri=+4 Sat=+5 Sun=+6
-   If meeting is TUESDAY:   Tue=+0 Wed=+1 Thu=+2 Fri=+3 Sat=+4 Sun=+5 Mon=+6
-   If meeting is WEDNESDAY: Wed=+0 Thu=+1 Fri=+2 Sat=+3 Sun=+4 Mon=+5 Tue=+6
-   If meeting is THURSDAY:  Thu=+0 Fri=+1 Sat=+2 Sun=+3 Mon=+4 Tue=+5 Wed=+6
-   If meeting is FRIDAY:    Fri=+0 Sat=+1 Sun=+2 Mon=+3 Tue=+4 Wed=+5 Thu=+6
-3. "Today" = +0. "Tomorrow" = +1. "End of day"/"EOD" = +0 (same day).
-4. Output "due" as YYYY-MM-DD only. NEVER output words like "Tuesday", "Friday", "Tomorrow", "EOD".
-5. Example: Monday 2026-03-09 → "today"=2026-03-09, "tomorrow"=2026-03-10, "Tuesday EOD"=2026-03-10, "Wednesday"=2026-03-11, "Friday"=2026-03-13.`,
+DATE RULES: A DATE REFERENCE block is appended to the transcript with pre-computed YYYY-MM-DD dates. ALWAYS use those exact dates for the "due" field. NEVER output day names, "EOD", "noon", or any relative words — only YYYY-MM-DD.`,
     model: "claude-haiku-4-5-20251001",
     max_tokens: 512,
     temperature: 0,
