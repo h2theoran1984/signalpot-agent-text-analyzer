@@ -1,4 +1,4 @@
-import { anthropic, logApiCost, type CostInfo } from "./anthropic.js";
+import { getAnthropicClient, logApiCost, type CostInfo } from "./anthropic.js";
 import { trackCost } from "./cost-tracker.js";
 import { resolveRelativeDates } from "./date-resolver.js";
 import { getActivePrompt } from "./prompt-loader.js";
@@ -41,6 +41,7 @@ export async function summarizeMeeting(input: MeetingSummaryInput): Promise<{ da
   const userPrompt = `${contextLine}Meeting transcript:
 ${processedText}`;
 
+  const anthropic = await getAnthropicClient();
   const message = await anthropic.messages.create({
     model: config.model,
     max_tokens: config.max_tokens,
@@ -76,6 +77,7 @@ DATE RULES: A DATE REFERENCE block is appended to the transcript with pre-comput
 export async function extractActionItems(input: { text: string }): Promise<{ data: ActionItemsOutput; cost: CostInfo }> {
   const config = await getActivePrompt("signalpot/action-items@v1");
 
+  const anthropic = await getAnthropicClient();
   const message = await anthropic.messages.create({
     model: config.model,
     max_tokens: config.max_tokens,

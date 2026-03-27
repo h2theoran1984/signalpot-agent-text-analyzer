@@ -1,8 +1,19 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { resolveCredential } from "./keykeeper.js";
 
-export const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+let _client: Anthropic | null = null;
+
+export async function getAnthropicClient(): Promise<Anthropic> {
+  if (_client) return _client;
+
+  const apiKey = await resolveCredential({
+    secretName: "anthropic-api-key",
+    envFallback: "ANTHROPIC_API_KEY",
+  });
+
+  _client = new Anthropic({ apiKey });
+  return _client;
+}
 
 // Haiku 4.5 pricing (per token)
 const HAIKU_INPUT_PER_TOKEN = 1.0 / 1_000_000;   // $1.00 / 1M tokens
